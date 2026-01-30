@@ -12,7 +12,7 @@
 如果要自定义修改压缩体积和压缩后的分辨率，将脚本batch-avif-2k用记事本或其他编辑器打开，修改8,9行即可
 ```js
 const CONFIG = {
-  inputDir: './avif-output', // 已修改：读取转换后的AVIF目录
+  inputDir: './avif-output', // 读取转换后的AVIF目录
   outputDir: './batch-avif-2k',
   targetSize: 200 * 1024, // 200为压缩后体积限制，可以自定义修改
   targetWidth: 2560, // 2K分辨率宽度 (2560x1440)，宽度改为1920可变为1080p画质 (1920x1080 可改为1080p)
