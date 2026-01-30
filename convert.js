@@ -7,7 +7,7 @@ const CONFIG = {
   inputDir: './local-images', // 待转换图片的文件夹（相对路径）
   outputDir: './avif-output', // 转换后AVIF图片的输出文件夹
   quality: 80, // AVIF图片质量（1-100，80兼顾画质和体积）
-  includeFormats: ['.jpg', '.jpeg', '.png'], // 要转换的图片格式
+  includeFormats: ['.jpg', '.jpeg', '.png', '.webp'], // 要转换的图片格式
   recursive: true // 是否递归处理子文件夹
 };
 

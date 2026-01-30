@@ -1,57 +1,100 @@
 @echo off
 chcp 65001 >nul 2>&1
 setlocal enabledelayedexpansion
-title 图片转AVIF并压缩(仅完成后停留)
+title 本地图片(WebP/JPG/PNG)转AVIF并压缩
 cls
 
-:: 1. 检测local-images是否有普通图片，无则直接提示并停留
-echo 【检测】检查local-images是否有普通图片...
-dir /b "%~dp0local-images\*.jpg" "%~dp0local-images\*.jpeg" "%~dp0local-images\*.png" >nul 2>&1
-if %errorlevel% neq 0 (
-    echo ❌ local-images目录下无JPG/PNG图片，无法执行！
-    echo.
-    echo 按任意键关闭窗口...
-    pause >nul
-    exit /b 0
-)
-echo ✅ 检测到普通图片，开始执行流程...
-echo.
+:: ==============================================
+echo 【前置检测】检查运行依赖是否就绪...
+echo ----------------------------------------------
 
-:: 2. 执行convert.js转AVIF（无中途停顿）
-echo 【1/2】执行convert.js → 转换普通图到avif-output...
-node "%~dp0convert.js"
-:: 转AVIF失败则直接终止并停留
+:: 1. 检测Node.js环境
+echo 1. 检测Node.js环境...
+node -v >nul 2>&1
 if %errorlevel% neq 0 (
-    echo.
-    echo ❌ convert.js执行失败！
+    echo ❌ 未检测到Node.js环境，请先安装！
+    echo 下载地址：https://nodejs.org/ （推荐LTS长期支持版）
     echo.
     echo 按任意键关闭窗口...
     pause >nul
     exit /b 1
 )
-echo ✅ convert.js执行完成！AVIF已输出到avif-output
+echo ✅ Node.js环境已就绪
+
+:: 2. 检测package.json配置文件
+echo 2. 检测项目依赖配置...
+if not exist "%~dp0package.json" (
+    echo ❌ 未找到package.json文件，请确保脚本在项目根目录执行！
+    echo.
+    echo 按任意键关闭窗口...
+    pause >nul
+    exit /b 1
+)
+
+:: 3. 自动安装/更新缺失依赖
+echo 3. 检查并安装缺失依赖
+call npm install >nul 2>&1
+if %errorlevel% neq 0 (
+    echo ❌ 依赖安装失败！请检查网络或package.json配置
+    echo 手动执行命令尝试：cd /d "%~dp0" && npm install
+    echo.
+    echo 按任意键关闭窗口...
+    pause >nul
+    exit /b 1
+)
+echo ✅ 所有依赖已安装完成
+echo ----------------------------------------------
 echo.
 
-:: 3. 检测avif-output是否有AVIF文件，无则终止并停留
-echo 【检测】检查avif-output是否有AVIF文件...
-dir /b "%~dp0avif-output\*.avif" >nul 2>&1
+:: ==============================================
+echo 【检测】检查local-images是否有可转换图片
+dir /b "%~dp0local-images\*.jpg" "%~dp0local-images\*.jpeg" "%~dp0local-images\*.png" "%~dp0local-images\*.webp" >nul 2>&1
 if %errorlevel% neq 0 (
-    echo ❌ avif-output目录下无AVIF文件，无法压缩！
+    echo ❌ local-images目录下无WebP/JPG/PNG图片，无法执行！
+    echo 请将需要转换的图片放入该目录后重试。
     echo.
     echo 按任意键关闭窗口...
     pause >nul
     exit /b 0
 )
-echo ✅ 检测到AVIF文件，开始压缩...
+echo ✅ 检测到可转换图片，开始执行转换流程...
 echo.
 
-:: 4. 执行压缩脚本（无中途停顿）
-echo 【2/2】执行压缩脚本 → 2K+200KB压缩...
+:: ==============================================
+:: 执行转换：WebP/JPG/PNG → AVIF（输出到avif-output）
+:: ==============================================
+echo 【1/2】执行转换脚本 → WebP/JPG/PNG 转 AVIF（输出到avif-output）...
+node "%~dp0convert.js"
+:: 转换失败则终止并提示
+if %errorlevel% neq 0 (
+    echo.
+    echo ❌ 图片转AVIF失败！请检查convert.js脚本或图片文件是否损坏
+    echo.
+    echo 按任意键关闭窗口...
+    pause >nul
+    exit /b 1
+)
+echo ✅ 图片转AVIF完成！所有AVIF文件已输出到avif-output目录
+echo.
+
+:: ==============================================
+echo 【检测】检查avif-output目录是否有生成的AVIF文件...
+dir /b "%~dp0avif-output\*.avif" >nul 2>&1
+if %errorlevel% neq 0 (
+    echo ❌ avif-output目录下无AVIF文件，转换未生成有效文件，无法压缩！
+    echo.
+    echo 按任意键关闭窗口...
+    pause >nul
+    exit /b 0
+)
+echo ✅ 检测到AVIF文件，开始执行2K+200KB压缩...
+echo.
+
+:: ==============================================
+echo 【2/2】执行压缩脚本 → 2K分辨率+文件大小≤200KB（输出到batch-avif-2k）...
 node "%~dp0batch-compress-avif-2k.js"
 echo.
 
-:: 5. 仅完成后统一停顿，不闪退
-echo ====================== 执行结束 ======================
-echo 👉 最终文件：batch-avif-2k文件夹（2K+≤200KB AVIF）
-echo 按任意键关闭窗口...
+echo ====================== 转换完成 ======================
+echo  最终压缩文件位置:batch-avif-2k 文件夹
 pause >nul
